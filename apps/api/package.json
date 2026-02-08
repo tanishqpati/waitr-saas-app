@@ -1,21 +1,15 @@
 {
-  "name": "waitr-saas-app",
+  "name": "api",
   "module": "index.ts",
   "type": "module",
   "private": true,
-  "workspaces": [
-    "apps/*",
-    "packages/*"
-  ],
   "scripts": {
-    "dev:web": "bun --cwd apps/web dev",
-    "dev:api": "bun --cwd apps/api dev"
+    "dev": "bun run src/index.ts"
   },
   "devDependencies": {
     "@types/bun": "latest",
     "@types/express": "^5.0.6",
-    "@types/node": "^25.2.2",
-    "turbo": "^2.8.3"
+    "@types/node": "^25.2.2"
   },
   "peerDependencies": {
     "typescript": "^5.9.3"
