@@ -1,0 +1,119 @@
+ generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  restaurantMembers RestaurantMember[]
+}
+
+model Restaurant {
+  id        String   @id @default(uuid())
+  name      String
+  slug      String   @unique
+  createdAt DateTime @default(now()) @map("created_at")
+
+  members       RestaurantMember[]
+  tables        Table[]
+  menuCategories MenuCategory[]
+  menuItems     MenuItem[]
+  orders        Order[]
+}
+
+model RestaurantMember {
+  id           String   @id @default(uuid())
+  userId       String   @map("user_id")
+  restaurantId String   @map("restaurant_id")
+  role         String
+
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, restaurantId])
+  @@map("restaurant_members")
+}
+
+model Table {
+  id           String   @id @default(uuid())
+  restaurantId String   @map("restaurant_id")
+  tableNumber  Int      @map("table_number")
+
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  orders     Order[]
+
+  @@map("tables")
+}
+
+model MenuCategory {
+  id           String   @id @default(uuid())
+  restaurantId String   @map("restaurant_id")
+  name         String
+  sortOrder    Int      @default(0) @map("sort_order")
+
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  items      MenuItem[]
+
+  @@map("menu_categories")
+}
+
+model MenuItem {
+  id           String   @id @default(uuid())
+  restaurantId String   @map("restaurant_id")
+  categoryId   String   @map("category_id")
+  name         String
+  price        Decimal  @db.Decimal(10, 2)
+  isAvailable  Boolean  @default(true) @map("is_available")
+
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  category   MenuCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  orderItems OrderItem[]
+
+  @@map("menu_items")
+}
+
+model Order {
+  id           String   @id @default(uuid())
+  restaurantId String   @map("restaurant_id")
+  tableId      String   @map("table_id")
+  status       String
+  totalAmount  Decimal  @map("total_amount") @db.Decimal(10, 2)
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  restaurant Restaurant   @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  table      Table        @relation(fields: [tableId], references: [id], onDelete: Cascade)
+  items      OrderItem[]
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id            String  @id @default(uuid())
+  orderId       String  @map("order_id")
+  menuItemId    String  @map("menu_item_id")
+  nameSnapshot  String  @map("name_snapshot")
+  priceSnapshot Decimal @map("price_snapshot") @db.Decimal(10, 2)
+  quantity      Int
+
+  order    Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  menuItem MenuItem @relation(fields: [menuItemId], references: [id], onDelete: Restrict)
+
+  @@map("order_items")
+}
+
+model OtpCode {
+  id         String   @id @default(uuid())
+  identifier String
+  otp        String
+  expiresAt  DateTime @map("expires_at")
+
+  @@map("otp_codes")
+}
