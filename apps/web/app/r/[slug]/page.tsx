@@ -3,6 +3,16 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { menuApi, ordersApi } from "@/lib/api";
 
 type CartItem = { menu_item_id: string; name: string; price: number; quantity: number };
@@ -16,7 +26,7 @@ export default function MenuPage() {
     categories: { id: string; name: string; items: { id: string; name: string; price: number }[] }[];
   } | null>(null);
   const [cart, setCart] = useState<CartItem[]>([]);
-  const [tableId, setTableId] = useState("");
+  const [tableId, setTableId] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [placing, setPlacing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -81,111 +91,129 @@ export default function MenuPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-zinc-500">Loading menu…</p>
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <p className="text-muted-foreground">Loading menu…</p>
       </div>
     );
   }
   if (error && !menu) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-4">
-        <p className="text-red-600 dark:text-red-400">{error}</p>
-        <button
-          onClick={() => { setError(null); setLoading(true); menuApi.getBySlug(slug).then(setMenu).catch((e) => setError(e.message)).finally(() => setLoading(false)); }}
-          className="rounded-lg border border-zinc-300 dark:border-zinc-600 px-4 py-2 text-sm"
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-background px-4">
+        <p className="text-destructive">{error}</p>
+        <Button
+          variant="outline"
+          onClick={() => {
+            setError(null);
+            setLoading(true);
+            menuApi.getBySlug(slug).then(setMenu).catch((e) => setError(e.message)).finally(() => setLoading(false));
+          }}
         >
           Retry
-        </button>
-        <Link href="/" className="text-sm text-zinc-500 hover:underline">Home</Link>
+        </Button>
+        <Link href="/" className="text-sm text-muted-foreground hover:underline">
+          Home
+        </Link>
       </div>
     );
   }
   if (!menu) return null;
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-900 pb-24">
-      <header className="sticky top-0 z-10 border-b border-zinc-200 dark:border-zinc-700 bg-white/95 dark:bg-zinc-800/95 backdrop-blur">
+    <div className="min-h-screen bg-background pb-24">
+      <header className="sticky top-0 z-10 border-b border-border bg-card/95 backdrop-blur">
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
-          <h1 className="font-semibold text-zinc-900 dark:text-zinc-100">{menu.restaurant.name}</h1>
-          <Link href="/" className="text-sm text-zinc-500 hover:underline">Home</Link>
+          <h1 className="font-semibold text-foreground">{menu.restaurant.name}</h1>
+          <Link href="/" className="text-sm text-muted-foreground hover:underline">
+            Home
+          </Link>
         </div>
       </header>
       <main className="max-w-2xl mx-auto px-4 py-6">
         {error && (
-          <div className="mb-4 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 text-sm flex items-center justify-between">
+          <div className="mb-4 flex items-center justify-between rounded-lg border border-destructive/50 bg-destructive/10 px-3 py-2 text-sm text-destructive">
             <span>{error}</span>
-            <button onClick={() => setError(null)} className="underline">Dismiss</button>
+            <Button variant="ghost" size="sm" onClick={() => setError(null)}>
+              Dismiss
+            </Button>
           </div>
         )}
         {success && (
-          <div className="mb-4 p-3 rounded-lg bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 text-sm">
+          <div className="mb-4 rounded-lg border border-primary/30 bg-primary/10 px-3 py-2 text-sm text-foreground">
             Order placed. Thank you!
           </div>
         )}
         {menu.categories.map((cat) => (
           <section key={cat.id} className="mb-8">
-            <h2 className="text-lg font-medium text-zinc-800 dark:text-zinc-200 mb-3">{cat.name}</h2>
+            <h2 className="text-lg font-medium text-foreground mb-3">{cat.name}</h2>
             <ul className="space-y-2">
               {cat.items.map((item) => (
-                <li
-                  key={item.id}
-                  className="flex items-center justify-between rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 p-3"
-                >
-                  <div>
-                    <p className="font-medium text-zinc-900 dark:text-zinc-100">{item.name}</p>
-                    <p className="text-sm text-zinc-500">${item.price.toFixed(2)}</p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => addToCart(item)}
-                    className="rounded-lg bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 px-3 py-1.5 text-sm font-medium"
-                  >
-                    Add
-                  </button>
+                <li key={item.id}>
+                  <Card>
+                    <CardContent className="flex flex-row items-center justify-between gap-3 py-4">
+                      <div>
+                        <p className="font-medium text-foreground">{item.name}</p>
+                        <p className="text-sm text-muted-foreground">${item.price.toFixed(2)}</p>
+                      </div>
+                      <Button type="button" size="sm" onClick={() => addToCart(item)}>
+                        Add
+                      </Button>
+                    </CardContent>
+                  </Card>
                 </li>
               ))}
             </ul>
           </section>
         ))}
       </main>
-      <footer className="fixed bottom-0 left-0 right-0 border-t border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 p-4">
+      <footer className="fixed bottom-0 left-0 right-0 border-t border-border bg-card p-4">
         <div className="max-w-2xl mx-auto space-y-3">
           {cart.length > 0 && (
-            <ul className="max-h-24 overflow-y-auto space-y-1 text-sm">
+            <ul className="max-h-24 overflow-y-auto space-y-1 text-sm text-muted-foreground">
               {cart.map((c) => (
                 <li key={c.menu_item_id} className="flex items-center justify-between">
-                  <span className="text-zinc-700 dark:text-zinc-300">{c.name} × {c.quantity}</span>
-                  <span className="flex items-center gap-2">
-                    <button type="button" onClick={() => updateQty(c.menu_item_id, -1)} className="w-6 h-6 rounded border text-zinc-600">−</button>
-                    <button type="button" onClick={() => updateQty(c.menu_item_id, 1)} className="w-6 h-6 rounded border text-zinc-600">+</button>
+                  <span>{c.name} × {c.quantity}</span>
+                  <span className="flex items-center gap-1">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon-xs"
+                      onClick={() => updateQty(c.menu_item_id, -1)}
+                    >
+                      −
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon-xs"
+                      onClick={() => updateQty(c.menu_item_id, 1)}
+                    >
+                      +
+                    </Button>
                   </span>
                 </li>
               ))}
             </ul>
           )}
           <form onSubmit={placeOrder} className="flex flex-wrap items-end gap-3">
-            <div className="flex-1 min-w-[120px]">
-              <label className="block text-xs font-medium text-zinc-500 mb-1">Table</label>
-              <select
-                value={tableId}
-                onChange={(e) => setTableId(e.target.value)}
-                required
-                className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-700 px-3 py-2 text-zinc-900 dark:text-zinc-100"
-              >
-                <option value="">Select</option>
-                {tables.map((t) => (
-                  <option key={t.id} value={t.id}>Table {t.tableNumber}</option>
-                ))}
-              </select>
+            <div className="flex-1 min-w-[120px] space-y-1.5">
+              <label className="text-xs font-medium text-muted-foreground">Table</label>
+              <Select value={tableId || undefined} onValueChange={(v) => setTableId(v)}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select table" />
+                </SelectTrigger>
+                <SelectContent>
+                  {tables.map((t) => (
+                    <SelectItem key={t.id} value={t.id}>
+                      Table {t.tableNumber}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-            <div className="text-lg font-medium text-zinc-900 dark:text-zinc-100">Total: ${total.toFixed(2)}</div>
-            <button
-              type="submit"
-              disabled={cart.length === 0 || !tableId || placing}
-              className="rounded-lg bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 px-4 py-2 font-medium disabled:opacity-50"
-            >
+            <div className="text-lg font-medium text-foreground">Total: ${total.toFixed(2)}</div>
+            <Button type="submit" disabled={cart.length === 0 || !tableId || placing}>
               {placing ? "Placing…" : "Place order"}
-            </button>
+            </Button>
           </form>
         </div>
       </footer>
