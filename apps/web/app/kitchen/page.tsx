@@ -2,6 +2,16 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { ordersApi, restaurantsApi } from "@/lib/api";
 
 const STATUSES = ["NEW", "PREPARING", "READY", "COMPLETED"] as const;
@@ -17,7 +27,7 @@ type Order = {
 
 export default function KitchenPage() {
   const [restaurants, setRestaurants] = useState<{ id: string; name: string; slug: string }[]>([]);
-  const [restaurantId, setRestaurantId] = useState("");
+  const [restaurantId, setRestaurantId] = useState<string>("");
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -42,8 +52,12 @@ export default function KitchenPage() {
     function fetchOrders() {
       ordersApi
         .list(restaurantId)
-        .then((data) => { if (!cancelled) setOrders(data); })
-        .catch((e) => { if (!cancelled) setError(e instanceof Error ? e.message : "Failed to load orders"); });
+        .then((data) => {
+          if (!cancelled) setOrders(data);
+        })
+        .catch((e) => {
+          if (!cancelled) setError(e instanceof Error ? e.message : "Failed to load orders");
+        });
     }
     fetchOrders();
     const interval = setInterval(fetchOrders, 5000);
@@ -65,89 +79,100 @@ export default function KitchenPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-zinc-500">Loading…</p>
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <p className="text-muted-foreground">Loading…</p>
       </div>
     );
   }
   if (restaurants.length === 0) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-4 px-4">
-        <p className="text-zinc-600 dark:text-zinc-400">No restaurants. Create one after logging in.</p>
-        <Link href="/login" className="text-zinc-900 dark:text-zinc-100 font-medium underline">Log in</Link>
-        <Link href="/" className="text-sm text-zinc-500 hover:underline">Home</Link>
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-background px-4">
+        <p className="text-muted-foreground">No restaurants. Create one after logging in.</p>
+        <Button asChild variant="link">
+          <Link href="/login">Log in</Link>
+        </Button>
+        <Link href="/" className="text-sm text-muted-foreground hover:underline">
+          Home
+        </Link>
       </div>
     );
   }
   if (!restaurantId) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-zinc-500">Loading…</p>
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <p className="text-muted-foreground">Loading…</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-900">
-      <header className="sticky top-0 z-10 border-b border-zinc-200 dark:border-zinc-700 bg-white/95 dark:bg-zinc-800/95 backdrop-blur">
+    <div className="min-h-screen bg-background">
+      <header className="sticky top-0 z-10 border-b border-border bg-card/95 backdrop-blur">
         <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
-          <select
-            value={restaurantId}
-            onChange={(e) => setRestaurantId(e.target.value)}
-            className="rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-700 px-3 py-2 text-zinc-900 dark:text-zinc-100"
-          >
-            {restaurants.map((r) => (
-              <option key={r.id} value={r.id}>{r.name}</option>
-            ))}
-          </select>
-          <Link href="/" className="text-sm text-zinc-500 hover:underline">Home</Link>
+          <Select value={restaurantId} onValueChange={setRestaurantId}>
+            <SelectTrigger className="min-w-[180px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {restaurants.map((r) => (
+                <SelectItem key={r.id} value={r.id}>
+                  {r.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Link href="/" className="text-sm text-muted-foreground hover:underline">
+            Home
+          </Link>
         </div>
       </header>
       <main className="max-w-4xl mx-auto px-4 py-6">
         {error && (
-          <div className="mb-4 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 text-sm flex items-center justify-between">
+          <div className="mb-4 flex items-center justify-between rounded-lg border border-destructive/50 bg-destructive/10 px-3 py-2 text-sm text-destructive">
             <span>{error}</span>
-            <button onClick={() => setError(null)} className="underline">Dismiss</button>
+            <Button variant="ghost" size="sm" onClick={() => setError(null)}>
+              Dismiss
+            </Button>
           </div>
         )}
         <div className="space-y-4">
           {orders.map((order) => (
-            <div
-              key={order.id}
-              className="rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 p-4"
-            >
-              <div className="flex items-center justify-between mb-2">
-                <span className="font-medium">
-                  Table {order.table?.tableNumber ?? "?"} · ${order.totalAmount.toFixed(2)}
-                </span>
-                <span className="text-sm text-zinc-500">{new Date(order.createdAt).toLocaleTimeString()}</span>
-              </div>
-              <ul className="text-sm text-zinc-600 dark:text-zinc-400 mb-3">
-                {order.items.map((i, idx) => (
-                  <li key={idx}>{i.nameSnapshot} × {i.quantity} — ${(i.priceSnapshot * i.quantity).toFixed(2)}</li>
-                ))}
-              </ul>
-              <div className="flex flex-wrap gap-2">
-                {STATUSES.map((s) => (
-                  <button
-                    key={s}
-                    type="button"
-                    onClick={() => setStatus(order.id, s)}
-                    className={`rounded-lg px-3 py-1.5 text-sm font-medium ${
-                      order.status === s
-                        ? "bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900"
-                        : "border border-zinc-300 dark:border-zinc-600 text-zinc-700 dark:text-zinc-300"
-                    }`}
-                  >
-                    {s}
-                  </button>
-                ))}
-              </div>
-            </div>
+            <Card key={order.id}>
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-medium text-foreground">
+                    Table {order.table?.tableNumber ?? "?"} · ${order.totalAmount.toFixed(2)}
+                  </span>
+                  <span className="text-sm text-muted-foreground">
+                    {new Date(order.createdAt).toLocaleTimeString()}
+                  </span>
+                </div>
+                <ul className="text-sm text-muted-foreground mb-3">
+                  {order.items.map((i, idx) => (
+                    <li key={idx}>
+                      {i.nameSnapshot} × {i.quantity} — ${(i.priceSnapshot * i.quantity).toFixed(2)}
+                    </li>
+                  ))}
+                </ul>
+                <div className="flex flex-wrap gap-2">
+                  {STATUSES.map((s) => (
+                    <Button
+                      key={s}
+                      type="button"
+                      size="sm"
+                      variant={order.status === s ? "default" : "outline"}
+                      onClick={() => setStatus(order.id, s)}
+                    >
+                      {s}
+                    </Button>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
           ))}
         </div>
         {orders.length === 0 && (
-          <p className="text-center text-zinc-500 py-8">No orders yet.</p>
+          <p className="text-center text-muted-foreground py-8">No orders yet.</p>
         )}
       </main>
     </div>
