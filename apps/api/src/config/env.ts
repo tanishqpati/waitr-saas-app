@@ -9,9 +9,6 @@ export const config = {
   nodeEnv: process.env.NODE_ENV ?? "development",
   jwtSecret: env("JWT_SECRET", "dev-secret-change-in-production"),
   otpExpiryMinutes: Number(process.env.OTP_EXPIRY_MINUTES ?? 10),
-  smtpHost: process.env.SMTP_HOST,
-  smtpPort: process.env.SMTP_PORT ? Number(process.env.SMTP_PORT) : undefined,
-  smtpUser: process.env.SMTP_USER,
-  smtpPass: process.env.SMTP_PASS,
-  mailFrom: process.env.MAIL_FROM ?? "noreply@waitr.local",
+  resendApiKey: process.env.RESEND_API_KEY,
+  mailFrom: process.env.MAIL_FROM ?? "Waitr <onboarding@resend.dev>",
 };
