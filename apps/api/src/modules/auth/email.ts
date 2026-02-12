@@ -1,35 +1,34 @@
-import nodemailer from "nodemailer";
+import { Resend } from "resend";
 import { config } from "../../config/env";
 import { logger } from "../../lib/logger";
 
-let transporter: nodemailer.Transporter | null = null;
+let resendClient: Resend | null = null;
 
-function getTransporter(): nodemailer.Transporter | null {
-  if (transporter) return transporter;
-  if (!config.smtpHost || !config.smtpUser || !config.smtpPass) {
-    logger.info("SMTP not configured; OTP will be logged only");
+function getResend(): Resend | null {
+  if (resendClient) return resendClient;
+  if (!config.resendApiKey) {
+    logger.info("Resend not configured; OTP will be logged only");
     return null;
   }
-  transporter = nodemailer.createTransport({
-    host: config.smtpHost,
-    port: config.smtpPort ?? 587,
-    secure: config.smtpPort === 465,
-    auth: { user: config.smtpUser, pass: config.smtpPass },
-  });
-  return transporter;
+  resendClient = new Resend(config.resendApiKey);
+  return resendClient;
 }
 
 export async function sendOtpEmail(to: string, otp: string): Promise<void> {
-  const transport = getTransporter();
+  const client = getResend();
   const body = `Your Waitr login code is: ${otp}. It expires in ${config.otpExpiryMinutes} minutes.`;
-  if (transport) {
-    await transport.sendMail({
+  if (client) {
+    const { error } = await client.emails.send({
       from: config.mailFrom,
       to,
       subject: "Your Waitr login code",
       text: body,
     });
+    if (error) {
+      logger.error("Resend send failed", error);
+      throw Object.assign(new Error("Failed to send email"), { statusCode: 500 });
+    }
   } else {
-    logger.info("OTP email (no SMTP)", { to, otp });
+    logger.info("OTP email (no Resend API key)", { to, otp });
   }
 }
