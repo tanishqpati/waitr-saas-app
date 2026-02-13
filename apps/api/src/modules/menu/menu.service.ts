@@ -45,9 +45,14 @@ async function userCanAccessRestaurant(userId: string, restaurantId: string): Pr
 export async function createCategory(user: AuthUser, restaurantId: string, name: string, sortOrder?: number) {
   const can = await userCanAccessRestaurant(user.id, restaurantId);
   if (!can) throw Object.assign(new Error("Forbidden"), { statusCode: 403 });
-  return prisma.menuCategory.create({
+  const category = await prisma.menuCategory.create({
     data: { restaurantId, name, sortOrder: sortOrder ?? 0 },
   });
+  await prisma.restaurant.update({
+    where: { id: restaurantId },
+    data: { onboardingStep: "MENU_ADDED" } as { onboardingStep: string },
+  });
+  return category;
 }
 
 export async function createMenuItem(
@@ -59,7 +64,12 @@ export async function createMenuItem(
 ) {
   const can = await userCanAccessRestaurant(user.id, restaurantId);
   if (!can) throw Object.assign(new Error("Forbidden"), { statusCode: 403 });
-  return prisma.menuItem.create({
+  const item = await prisma.menuItem.create({
     data: { restaurantId, categoryId, name, price, isAvailable: true },
   });
+  await prisma.restaurant.update({
+    where: { id: restaurantId },
+    data: { onboardingStep: "MENU_ADDED" } as { onboardingStep: string },
+  });
+  return item;
 }
