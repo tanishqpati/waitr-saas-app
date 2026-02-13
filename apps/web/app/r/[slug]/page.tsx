@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -19,7 +19,9 @@ type CartItem = { menu_item_id: string; name: string; price: number; quantity: n
 
 export default function MenuPage() {
   const params = useParams();
+  const searchParams = useSearchParams();
   const slug = params?.slug as string;
+  const tableParam = searchParams?.get("t");
   const [menu, setMenu] = useState<{
     restaurant: { id: string; name: string; slug: string };
     tables: { id: string; tableNumber: number }[];
@@ -38,10 +40,17 @@ export default function MenuPage() {
     setLoading(true);
     menuApi
       .getBySlug(slug)
-      .then((data) => setMenu(data))
+      .then((data) => {
+        setMenu(data);
+        if (tableParam && data?.tables) {
+          const tableNum = parseInt(tableParam, 10);
+          const table = data.tables.find((t) => t.tableNumber === tableNum);
+          if (table) setTableId(table.id);
+        }
+      })
       .catch((err) => setError(err instanceof Error ? err.message : "Failed to load menu"))
       .finally(() => setLoading(false));
-  }, [slug]);
+  }, [slug, tableParam]);
 
   const tables = menu?.tables ?? [];
 
