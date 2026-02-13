@@ -59,7 +59,7 @@ ordersProtected.use(authMiddleware);
 
 ordersProtected.get("/", validate(listOrdersQuery, "query"), async (req, res, next) => {
   try {
-    const { restaurantId } = req.query as { restaurantId: string };
+    const { restaurantId } = (req.validatedQuery ?? req.query) as { restaurantId: string };
     const orders = await listOrders(restaurantId);
     res.json(
       orders.map((o) => ({
@@ -87,7 +87,7 @@ ordersProtected.patch(
   validate(updateOrderStatusBody),
   async (req, res, next) => {
     try {
-      const { id } = req.params as { id: string };
+      const { id } = (req.validatedParams ?? req.params) as { id: string };
       const { status } = req.body;
       const order = await updateOrderStatus(id, status, req.user);
       try {

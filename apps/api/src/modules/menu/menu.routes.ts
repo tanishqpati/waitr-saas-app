@@ -8,7 +8,7 @@ import { notFound, unauthorized } from "../../lib/errors";
 export const menuPublicRouter = Router();
 menuPublicRouter.get("/:slug/menu", validate(menuSlugParams, "params"), async (req, res, next) => {
   try {
-    const { slug } = req.params as { slug: string };
+    const { slug } = (req.validatedParams ?? req.params) as { slug: string };
     const menu = await getMenuBySlug(slug);
     if (!menu) return next(notFound("Restaurant not found"));
     res.json(menu);

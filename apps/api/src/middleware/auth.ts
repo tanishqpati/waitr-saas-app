@@ -9,6 +9,8 @@ declare global {
   namespace Express {
     interface Request {
       user?: AuthUser;
+      validatedQuery?: Record<string, unknown>;
+      validatedParams?: Record<string, unknown>;
     }
   }
 }
