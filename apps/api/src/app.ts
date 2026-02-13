@@ -3,6 +3,7 @@ import cors from "cors";
 import express from "express";
 import { config } from "./config/env";
 import { errorMiddleware } from "./middleware/error";
+import { rateLimitMiddleware } from "./middleware/rateLimit";
 import { requestLogMiddleware } from "./middleware/requestLog";
 import { notFound } from "./lib/errors";
 import { authRouter } from "./modules/auth/auth.routes";
@@ -20,6 +21,7 @@ app.use(
 app.use(cookieParser());
 app.use(express.json());
 app.use(requestLogMiddleware);
+app.use(rateLimitMiddleware);
 
 app.get("/", (_req, res) => res.json({ message: "API running" }));
 
