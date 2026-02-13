@@ -1,15 +1,13 @@
 import { Router } from "express";
+import { validate } from "../../middleware/validate";
+import { sendOtpBody, verifyOtpBody } from "../../validators/auth";
 import { sendOtp, verifyOtp } from "./auth.service";
 
 export const authRouter = Router();
 
-authRouter.post("/send-otp", async (req, res, next) => {
+authRouter.post("/send-otp", validate(sendOtpBody), async (req, res, next) => {
   try {
-    const email = req.body?.email;
-    if (!email || typeof email !== "string") {
-      res.status(400).json({ error: "Email is required" });
-      return;
-    }
+    const { email } = req.body;
     await sendOtp(email);
     res.json({ ok: true });
   } catch (e) {
@@ -17,14 +15,9 @@ authRouter.post("/send-otp", async (req, res, next) => {
   }
 });
 
-authRouter.post("/verify-otp", async (req, res, next) => {
+authRouter.post("/verify-otp", validate(verifyOtpBody), async (req, res, next) => {
   try {
-    const email = req.body?.email;
-    const otp = req.body?.otp;
-    if (!email || typeof email !== "string" || !otp || typeof otp !== "string") {
-      res.status(400).json({ error: "Email and OTP are required" });
-      return;
-    }
+    const { email, otp } = req.body;
     const { token } = await verifyOtp(email, otp);
     res.json({ token });
   } catch (e) {

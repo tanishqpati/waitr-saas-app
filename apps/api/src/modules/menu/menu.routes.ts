@@ -1,20 +1,16 @@
 import { Router } from "express";
 import { authMiddleware } from "../../middleware/auth";
+import { validate } from "../../middleware/validate";
+import { createCategoryBody, createMenuItemBody, menuSlugParams } from "../../validators/menu";
 import { createCategory, createMenuItem, getMenuBySlug } from "./menu.service";
+import { notFound, unauthorized } from "../../lib/errors";
 
 export const menuPublicRouter = Router();
-menuPublicRouter.get("/:slug/menu", async (req, res, next) => {
+menuPublicRouter.get("/:slug/menu", validate(menuSlugParams, "params"), async (req, res, next) => {
   try {
-    const slug = req.params.slug;
-    if (!slug) {
-      res.status(400).json({ error: "Slug is required" });
-      return;
-    }
+    const { slug } = req.params as { slug: string };
     const menu = await getMenuBySlug(slug);
-    if (!menu) {
-      res.status(404).json({ error: "Restaurant not found" });
-      return;
-    }
+    if (!menu) return next(notFound("Restaurant not found"));
     res.json(menu);
   } catch (e) {
     next(e);
@@ -23,31 +19,20 @@ menuPublicRouter.get("/:slug/menu", async (req, res, next) => {
 
 export const menuProtectedRouter = Router();
 menuProtectedRouter.use(authMiddleware);
-menuProtectedRouter.post("/categories", async (req, res, next) => {
+menuProtectedRouter.post("/categories", validate(createCategoryBody), async (req, res, next) => {
   try {
-    const restaurantId = req.body?.restaurant_id ?? req.body?.restaurantId;
-    const name = req.body?.name;
-    const sortOrder = req.body?.sort_order ?? req.body?.sortOrder;
-    if (!req.user || !restaurantId || !name) {
-      res.status(400).json({ error: "restaurant_id and name are required" });
-      return;
-    }
+    if (!req.user) return next(unauthorized());
+    const { restaurantId, name, sortOrder } = req.body;
     const category = await createCategory(req.user, restaurantId, name, sortOrder);
     res.status(201).json(category);
   } catch (e) {
     next(e);
   }
 });
-menuProtectedRouter.post("/items", async (req, res, next) => {
+menuProtectedRouter.post("/items", validate(createMenuItemBody), async (req, res, next) => {
   try {
-    const restaurantId = req.body?.restaurant_id ?? req.body?.restaurantId;
-    const categoryId = req.body?.category_id ?? req.body?.categoryId;
-    const name = req.body?.name;
-    const price = Number(req.body?.price);
-    if (!req.user || !restaurantId || !categoryId || !name || Number.isNaN(price) || price < 0) {
-      res.status(400).json({ error: "restaurant_id, category_id, name, and price are required" });
-      return;
-    }
+    if (!req.user) return next(unauthorized());
+    const { restaurantId, categoryId, name, price } = req.body;
     const item = await createMenuItem(req.user, restaurantId, categoryId, name, price);
     res.status(201).json(item);
   } catch (e) {
