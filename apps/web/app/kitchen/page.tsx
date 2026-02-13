@@ -13,6 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ordersApi, restaurantsApi } from "@/lib/api";
+import { getSocket } from "@/lib/socket";
 
 const STATUSES = ["NEW", "PREPARING", "READY", "COMPLETED"] as const;
 
@@ -43,27 +44,42 @@ export default function KitchenPage() {
       .finally(() => setLoading(false));
   }, []);
 
+  // Initial fetch + realtime: socket for live updates, single refetch on mount/restaurant change
   useEffect(() => {
     if (!restaurantId) {
       setOrders([]);
       return;
     }
     let cancelled = false;
-    function fetchOrders() {
-      ordersApi
-        .list(restaurantId)
-        .then((data) => {
-          if (!cancelled) setOrders(data);
-        })
-        .catch((e) => {
-          if (!cancelled) setError(e instanceof Error ? e.message : "Failed to load orders");
-        });
-    }
-    fetchOrders();
-    const interval = setInterval(fetchOrders, 5000);
+    ordersApi
+      .list(restaurantId)
+      .then((data) => {
+        if (!cancelled) setOrders(data);
+      })
+      .catch((e) => {
+        if (!cancelled) setError(e instanceof Error ? e.message : "Failed to load orders");
+      });
+
+    const socket = getSocket();
+    socket.emit("join_restaurant", restaurantId);
+
+    const onOrderCreated = (order: Order) => {
+      if (!cancelled) setOrders((prev) => [order, ...prev]);
+    };
+    const onOrderStatusUpdated = (payload: { orderId: string; status: string }) => {
+      if (!cancelled)
+        setOrders((prev) =>
+          prev.map((o) => (o.id === payload.orderId ? { ...o, status: payload.status } : o))
+        );
+    };
+
+    socket.on("order_created", onOrderCreated);
+    socket.on("order_status_updated", onOrderStatusUpdated);
+
     return () => {
       cancelled = true;
-      clearInterval(interval);
+      socket.off("order_created", onOrderCreated);
+      socket.off("order_status_updated", onOrderStatusUpdated);
     };
   }, [restaurantId]);
 
