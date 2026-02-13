@@ -8,11 +8,17 @@ const orderItemSchema = z.object({
 export const createOrderBody = z.object({
   table_id: z.string().min(1).optional(),
   tableId: z.string().min(1).optional(),
-  items: z.array(orderItemSchema).min(1, "At least one item is required"),
+  items: z.array(orderItemSchema).optional(),
+  cart_session_id: z.string().min(1).optional(),
 }).refine((d) => (d.table_id ?? d.tableId) != null, { message: "table_id is required" })
+  .refine(
+    (d) => (d.items != null && d.items.length > 0) || (d.cart_session_id != null && d.cart_session_id.length > 0),
+    { message: "items or cart_session_id is required" }
+  )
   .transform((data) => ({
     tableId: (data.table_id ?? data.tableId) as string,
-    items: data.items,
+    items: data.items ?? [],
+    cartSessionId: data.cart_session_id ?? null,
   }));
 
 export const listOrdersQuery = z.object({

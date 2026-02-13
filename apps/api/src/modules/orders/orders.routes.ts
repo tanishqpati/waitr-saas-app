@@ -1,6 +1,8 @@
 import { Router } from "express";
-import { authMiddleware } from "../../middleware/auth";
+import { prisma } from "../../config/db";
+import { notFound } from "../../lib/errors";
 import { getIO, roomForRestaurant } from "../../lib/socket";
+import { authMiddleware } from "../../middleware/auth";
 import { validate } from "../../middleware/validate";
 import {
   createOrderBody,
@@ -8,9 +10,8 @@ import {
   updateOrderStatusBody,
   updateOrderStatusParams,
 } from "../../validators/orders";
+import { getCart, setCart } from "../cart/cart.service";
 import { createOrder, listOrders, updateOrderStatus } from "./orders.service";
-import { prisma } from "../../config/db";
-import { notFound } from "../../lib/errors";
 
 function serializeOrder(order: {
   id: string;
@@ -39,10 +40,15 @@ export const ordersRouter = Router();
 
 ordersRouter.post("/", validate(createOrderBody), async (req, res, next) => {
   try {
-    const { tableId, items } = req.body;
+    const { tableId, items: bodyItems, cartSessionId } = req.body;
+    let items = bodyItems as { menu_item_id: string; quantity: number }[];
+    if (cartSessionId && (!items || items.length === 0)) {
+      items = await getCart(cartSessionId);
+    }
     const table = await prisma.table.findUnique({ where: { id: tableId }, include: { restaurant: true } });
     if (!table) return next(notFound("Table not found"));
     const order = await createOrder(table.restaurantId, tableId, items);
+    if (cartSessionId) await setCart(cartSessionId, []);
     try {
       getIO().to(roomForRestaurant(table.restaurantId)).emit("order_created", serializeOrder(order));
     } catch {
