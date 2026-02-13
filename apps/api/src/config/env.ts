@@ -11,4 +11,14 @@ export const config = {
   otpExpiryMinutes: Number(process.env.OTP_EXPIRY_MINUTES ?? 10),
   resendApiKey: process.env.RESEND_API_KEY,
   mailFrom: process.env.MAIL_FROM ?? "Waitr <onboarding@resend.dev>",
+  /** Access token expiry (e.g. "15m"). */
+  accessTokenExpiry: process.env.ACCESS_TOKEN_EXPIRY ?? "15m",
+  /** Refresh token expiry (e.g. "14d"). */
+  refreshTokenExpiry: process.env.REFRESH_TOKEN_EXPIRY ?? "14d",
+  /** Refresh token cookie name. */
+  refreshCookieName: process.env.REFRESH_COOKIE_NAME ?? "waitr_rt",
+  /** Redis URL for session store. If unset, in-memory store is used. */
+  redisUrl: process.env.REDIS_URL,
+  /** Allowed CORS origin (for credentials). Default development. */
+  corsOrigin: process.env.CORS_ORIGIN ?? "http://localhost:3000",
 };

@@ -1,5 +1,7 @@
-import express from "express";
+import cookieParser from "cookie-parser";
 import cors from "cors";
+import express from "express";
+import { config } from "./config/env";
 import { errorMiddleware } from "./middleware/error";
 import { requestLogMiddleware } from "./middleware/requestLog";
 import { notFound } from "./lib/errors";
@@ -9,7 +11,13 @@ import { ordersRouter, ordersProtectedRouter } from "./modules/orders/orders.rou
 import { restaurantsRouter } from "./modules/restaurants/restaurants.routes";
 
 const app = express();
-app.use(cors());
+app.use(
+  cors({
+    origin: config.corsOrigin,
+    credentials: true,
+  })
+);
+app.use(cookieParser());
 app.use(express.json());
 app.use(requestLogMiddleware);
 
