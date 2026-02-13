@@ -58,7 +58,9 @@ export function errorMiddleware(
   }
 
   if (status >= 500) {
-    logger.error("Unhandled error", err);
+    logger.error("Server error", err);
+  } else {
+    logger.info("Error response", { status, message, code });
   }
 
   const body: ErrorResponse = { success: false, error: message };
