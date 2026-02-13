@@ -12,6 +12,9 @@ export default function Home() {
             <Link href="/login">Owner login</Link>
           </Button>
           <Button asChild variant="outline" size="lg" className="w-full">
+            <Link href="/onboarding">Continue setup</Link>
+          </Button>
+          <Button asChild variant="outline" size="lg" className="w-full">
             <Link href="/kitchen">Kitchen</Link>
           </Button>
           <Button asChild variant="outline" size="lg" className="w-full">
