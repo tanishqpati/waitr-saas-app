@@ -40,7 +40,7 @@ export default function LoginPage() {
     try {
       const { token } = await authApi.verifyOtp(email, otp);
       setToken(token);
-      router.push("/kitchen");
+      router.push("/onboarding");
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Invalid OTP");
