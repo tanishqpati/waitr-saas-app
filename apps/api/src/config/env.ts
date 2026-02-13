@@ -21,4 +21,7 @@ export const config = {
   redisUrl: process.env.REDIS_URL,
   /** Allowed CORS origin (for credentials). Default development. */
   corsOrigin: process.env.CORS_ORIGIN ?? "http://localhost:3000",
+  /** Upstash Redis (REST) for menu cache, cart, rate limiting. */
+  upstashRedisRestUrl: process.env.UPSTASH_REDIS_REST_URL,
+  upstashRedisRestToken: process.env.UPSTASH_REDIS_REST_TOKEN,
 };
