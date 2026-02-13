@@ -55,6 +55,13 @@ export async function createOrder(
     },
     include: { items: true, table: true },
   });
+  const orderCount = await prisma.order.count({ where: { restaurantId } });
+  if (orderCount === 1) {
+    await prisma.restaurant.update({
+      where: { id: restaurantId },
+      data: { onboardingStep: "TEST_ORDER_DONE" },
+    });
+  }
   logger.order("placed", { orderId: order.id, restaurantId, tableId, total });
   return order;
 }
