@@ -1,5 +1,12 @@
 import { prisma } from "../../config/db";
+import {
+  getUpstashRedis,
+  MENU_CACHE_PREFIX,
+  MENU_CACHE_TTL_SEC,
+} from "../../lib/upstash";
 import type { AuthUser } from "../../middleware/auth";
+
+export type MenuBySlugResult = Awaited<ReturnType<typeof getMenuBySlug>>;
 
 export async function getMenuBySlug(slug: string) {
   const restaurant = await prisma.restaurant.findUnique({
@@ -35,6 +42,27 @@ export async function getMenuBySlug(slug: string) {
   };
 }
 
+/** Get menu by slug with Upstash cache. On miss: DB → save to Redis → return. */
+export async function getMenuBySlugCached(slug: string): Promise<MenuBySlugResult | null> {
+  const redis = getUpstashRedis();
+  const key = `${MENU_CACHE_PREFIX}${slug.toLowerCase()}`;
+  if (redis) {
+    const cached = await redis.get(key);
+    if (typeof cached === "string") return JSON.parse(cached) as MenuBySlugResult;
+  }
+  const menu = await getMenuBySlug(slug);
+  if (menu && redis) await redis.setex(key, MENU_CACHE_TTL_SEC, JSON.stringify(menu));
+  return menu;
+}
+
+/** Invalidate menu cache for a restaurant (call after menu mutations). */
+export async function invalidateMenuCache(restaurantId: string): Promise<void> {
+  const redis = getUpstashRedis();
+  if (!redis) return;
+  const r = await prisma.restaurant.findUnique({ where: { id: restaurantId }, select: { slug: true } });
+  if (r) await redis.del(`${MENU_CACHE_PREFIX}${r.slug}`);
+}
+
 async function userCanAccessRestaurant(userId: string, restaurantId: string): Promise<boolean> {
   const member = await prisma.restaurantMember.findUnique({
     where: { userId_restaurantId: { userId, restaurantId } },
@@ -52,6 +80,7 @@ export async function createCategory(user: AuthUser, restaurantId: string, name:
     where: { id: restaurantId },
     data: { onboardingStep: "MENU_ADDED" } as { onboardingStep: string },
   });
+  await invalidateMenuCache(restaurantId);
   return category;
 }
 
@@ -71,5 +100,6 @@ export async function createMenuItem(
     where: { id: restaurantId },
     data: { onboardingStep: "MENU_ADDED" } as { onboardingStep: string },
   });
+  await invalidateMenuCache(restaurantId);
   return item;
 }

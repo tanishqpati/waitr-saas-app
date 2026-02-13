@@ -2,14 +2,14 @@ import { Router } from "express";
 import { authMiddleware } from "../../middleware/auth";
 import { validate } from "../../middleware/validate";
 import { createCategoryBody, createMenuItemBody, menuSlugParams } from "../../validators/menu";
-import { createCategory, createMenuItem, getMenuBySlug } from "./menu.service";
+import { createCategory, createMenuItem, getMenuBySlugCached } from "./menu.service";
 import { notFound, unauthorized } from "../../lib/errors";
 
 export const menuPublicRouter = Router();
 menuPublicRouter.get("/:slug/menu", validate(menuSlugParams, "params"), async (req, res, next) => {
   try {
     const { slug } = (req.validatedParams ?? req.params) as { slug: string };
-    const menu = await getMenuBySlug(slug);
+    const menu = await getMenuBySlugCached(slug);
     if (!menu) return next(notFound("Restaurant not found"));
     res.json(menu);
   } catch (e) {
