@@ -1,12 +1,12 @@
 import { z } from "zod";
+import { orderItemSchema, ORDER_ITEMS_MAX } from "./schemas";
 
-const cartItemSchema = z.object({
-  menu_item_id: z.string().min(1),
-  quantity: z.coerce.number().int().min(1),
-});
+const cartItemsArraySchema = z
+  .array(orderItemSchema)
+  .max(ORDER_ITEMS_MAX, `At most ${ORDER_ITEMS_MAX} items in cart`);
 
 export const cartBodySchema = z.object({
-  items: z.array(cartItemSchema),
+  items: cartItemsArraySchema,
 });
 
 export type CartBody = z.infer<typeof cartBodySchema>;
