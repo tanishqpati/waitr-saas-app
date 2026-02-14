@@ -1,12 +1,13 @@
 import { z } from "zod";
+import { otpSchema } from "./schemas";
 
 export const sendOtpBody = z.object({
-  email: z.string().email("Invalid email").transform((s) => s.toLowerCase().trim()),
+  email: z.string().email("Invalid email").max(255).transform((s) => s.toLowerCase().trim()),
 });
 
 export const verifyOtpBody = z.object({
-  email: z.string().email("Invalid email").transform((s) => s.toLowerCase().trim()),
-  otp: z.string().min(1, "OTP is required"),
+  email: z.string().email("Invalid email").max(255).transform((s) => s.toLowerCase().trim()),
+  otp: otpSchema,
 });
 
 export type SendOtpBody = z.infer<typeof sendOtpBody>;
