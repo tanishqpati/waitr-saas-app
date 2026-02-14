@@ -8,6 +8,8 @@ export interface SessionStore {
   set(jti: string, userId: string, ttlSeconds?: number): Promise<void>;
   get(jti: string): Promise<string | null>;
   delete(jti: string): Promise<void>;
+  /** Ping for health check. No-op for in-memory; throws if Redis unreachable. */
+  ping(): Promise<void>;
 }
 
 const memory = new Map<string, { userId: string; timeout: ReturnType<typeof setTimeout> }>();
@@ -30,6 +32,9 @@ export const memoryStore: SessionStore = {
     if (existing) clearTimeout(existing.timeout);
     memory.delete(key);
   },
+  async ping() {
+    /* in-memory: always healthy */
+  },
 };
 
 function createRedisStore(): SessionStore {
@@ -44,6 +49,9 @@ function createRedisStore(): SessionStore {
     },
     async delete(jti: string) {
       await redis.del(REFRESH_PREFIX + jti);
+    },
+    async ping() {
+      await redis.ping();
     },
   };
 }
