@@ -1,15 +1,15 @@
 import { z } from "zod";
+import { orderItemSchema, ORDER_ITEMS_MAX } from "./schemas";
+import { uuidSchema } from "./schemas";
 
-const orderItemSchema = z.object({
-  menu_item_id: z.string().min(1, "menu_item_id is required"),
-  quantity: z.coerce.number().int().min(1, "Quantity must be at least 1"),
-});
+/** When items are provided (no cart_session_id), use orderItemsArraySchema elsewhere. */
+const createOrderItemsSchema = z.array(orderItemSchema).max(ORDER_ITEMS_MAX).optional();
 
 export const createOrderBody = z.object({
-  table_id: z.string().min(1).optional(),
-  tableId: z.string().min(1).optional(),
-  items: z.array(orderItemSchema).optional(),
-  cart_session_id: z.string().min(1).optional(),
+  table_id: uuidSchema.optional(),
+  tableId: uuidSchema.optional(),
+  items: createOrderItemsSchema,
+  cart_session_id: z.string().min(1, "cart_session_id is required").max(100).optional(),
 }).refine((d) => (d.table_id ?? d.tableId) != null, { message: "table_id is required" })
   .refine(
     (d) => (d.items != null && d.items.length > 0) || (d.cart_session_id != null && d.cart_session_id.length > 0),
@@ -22,15 +22,15 @@ export const createOrderBody = z.object({
   }));
 
 export const listOrdersQuery = z.object({
-  restaurant_id: z.string().min(1).optional(),
-  restaurantId: z.string().min(1).optional(),
+  restaurant_id: uuidSchema.optional(),
+  restaurantId: uuidSchema.optional(),
 }).refine((d) => (d.restaurant_id ?? d.restaurantId) != null, { message: "restaurant_id is required" })
   .transform((data) => ({
     restaurantId: (data.restaurant_id ?? data.restaurantId) as string,
   }));
 
 export const updateOrderStatusParams = z.object({
-  id: z.string().min(1, "Order id is required"),
+  id: uuidSchema,
 });
 
 export const updateOrderStatusBody = z.object({
