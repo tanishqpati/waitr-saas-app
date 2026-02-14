@@ -1,10 +1,11 @@
 import { z } from "zod";
+import { restaurantNameSchema, slugSchema, tableCountSchema } from "./schemas";
 
 export const createRestaurantBody = z.object({
-  name: z.string().min(1, "Name is required"),
-  slug: z.string().min(1, "Slug is required").regex(/^[a-z0-9-]+$/, "Slug: lowercase letters, numbers, hyphens only"),
-  table_count: z.coerce.number().int().min(1).max(50).optional(),
-  tableCount: z.coerce.number().int().min(1).max(50).optional(),
+  name: restaurantNameSchema,
+  slug: slugSchema,
+  table_count: tableCountSchema.optional(),
+  tableCount: tableCountSchema.optional(),
 }).transform((data) => ({
   name: data.name,
   slug: data.slug,
