@@ -1,15 +1,23 @@
 import { z } from "zod";
+import {
+  categoryNameSchema,
+  itemNameSchema,
+  priceSchema,
+  sortOrderSchema,
+  slugSchema,
+  uuidSchema,
+} from "./schemas";
 
 export const menuSlugParams = z.object({
-  slug: z.string().min(1, "Slug is required"),
+  slug: slugSchema,
 });
 
 export const createCategoryBody = z.object({
-  restaurant_id: z.string().min(1).optional(),
-  restaurantId: z.string().min(1).optional(),
-  name: z.string().min(1, "Name is required"),
-  sort_order: z.number().int().min(0).optional(),
-  sortOrder: z.number().int().min(0).optional(),
+  restaurant_id: uuidSchema.optional(),
+  restaurantId: uuidSchema.optional(),
+  name: categoryNameSchema,
+  sort_order: sortOrderSchema.optional(),
+  sortOrder: sortOrderSchema.optional(),
 }).refine((d) => (d.restaurant_id ?? d.restaurantId) != null, { message: "restaurant_id is required" })
   .transform((data) => ({
     restaurantId: (data.restaurant_id ?? data.restaurantId) as string,
@@ -18,12 +26,12 @@ export const createCategoryBody = z.object({
   }));
 
 export const createMenuItemBody = z.object({
-  restaurant_id: z.string().min(1).optional(),
-  restaurantId: z.string().min(1).optional(),
-  category_id: z.string().min(1).optional(),
-  categoryId: z.string().min(1).optional(),
-  name: z.string().min(1, "Name is required"),
-  price: z.coerce.number().min(0, "Price must be >= 0"),
+  restaurant_id: uuidSchema.optional(),
+  restaurantId: uuidSchema.optional(),
+  category_id: uuidSchema.optional(),
+  categoryId: uuidSchema.optional(),
+  name: itemNameSchema,
+  price: priceSchema,
 }).refine((d) => (d.restaurant_id ?? d.restaurantId) != null, { message: "restaurant_id is required" })
   .refine((d) => (d.category_id ?? d.categoryId) != null, { message: "category_id is required" })
   .transform((data) => ({
