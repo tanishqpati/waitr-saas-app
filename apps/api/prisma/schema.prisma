@@ -50,6 +50,7 @@ model Table {
   restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
   orders     Order[]
 
+  @@index([restaurantId])
   @@map("tables")
 }
 
@@ -77,6 +78,7 @@ model MenuItem {
   category   MenuCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   orderItems OrderItem[]
 
+  @@index([restaurantId])
   @@map("menu_items")
 }
 
@@ -92,6 +94,9 @@ model Order {
   table      Table        @relation(fields: [tableId], references: [id], onDelete: Cascade)
   items      OrderItem[]
 
+  @@index([restaurantId])
+  @@index([createdAt])
+  @@index([restaurantId, createdAt])
   @@map("orders")
 }
 
