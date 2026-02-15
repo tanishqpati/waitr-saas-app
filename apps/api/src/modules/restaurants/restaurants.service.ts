@@ -3,6 +3,13 @@ import type { AuthUser } from "../../middleware/auth";
 
 const ADMIN_ROLE = "ADMIN";
 
+export async function userCanAccessRestaurant(userId: string, restaurantId: string): Promise<boolean> {
+  const member = await prisma.restaurantMember.findUnique({
+    where: { userId_restaurantId: { userId, restaurantId } },
+  });
+  return !!member;
+}
+
 export async function createRestaurant(user: AuthUser, name: string, slug: string, tableCount: number = 10) {
   const slugNorm = slug.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
   const restaurant = await prisma.restaurant.create({
