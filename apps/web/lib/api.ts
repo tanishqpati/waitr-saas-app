@@ -155,6 +155,20 @@ export const menuApi = {
       method: "PATCH",
       body: JSON.stringify({ restaurant_id: restaurantId, item_ids: itemIds }),
     }),
+  getVariants: (itemId: string) =>
+    api<{ id: string; name: string; priceModifier: number }[]>(`/menu/items/${itemId}/variants`),
+  createVariant: (itemId: string, name: string, priceModifier: number) =>
+    api<{ id: string; name: string; priceModifier: number }>(`/menu/items/${itemId}/variants`, {
+      method: "POST",
+      body: JSON.stringify({ name, priceModifier }),
+    }),
+  getAddons: (itemId: string) =>
+    api<{ id: string; name: string; price: number }[]>(`/menu/items/${itemId}/addons`),
+  createAddon: (itemId: string, name: string, price: number) =>
+    api<{ id: string; name: string; price: number }>(`/menu/items/${itemId}/addons`, {
+      method: "POST",
+      body: JSON.stringify({ name, price }),
+    }),
   getBySlug: (slug: string) =>
     api<{
       restaurant: { id: string; name: string; slug: string };
