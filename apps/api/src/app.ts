@@ -6,6 +6,7 @@ import { errorMiddleware } from "./middleware/error";
 import { rateLimitMiddleware } from "./middleware/rateLimit";
 import { requestLogMiddleware } from "./middleware/requestLog";
 import { notFound } from "./lib/errors";
+import { analyticsRouter } from "./modules/analytics/analytics.routes";
 import { authRouter } from "./modules/auth/auth.routes";
 import { cartRouter } from "./modules/cart/cart.routes";
 import { healthRouter } from "./modules/health/health.routes";
@@ -30,6 +31,7 @@ app.use("/health", healthRouter);
 app.use(rateLimitMiddleware);
 
 app.use("/auth", authRouter);
+app.use("/analytics", analyticsRouter);
 app.use("/cart", cartRouter);
 app.use("/restaurants", menuPublicRouter);
 app.use("/menu", menuProtectedRouter);
