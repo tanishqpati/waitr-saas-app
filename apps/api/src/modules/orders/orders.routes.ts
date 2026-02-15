@@ -41,7 +41,7 @@ export const ordersRouter = Router();
 ordersRouter.post("/", validate(createOrderBody), async (req, res, next) => {
   try {
     const { tableId, items: bodyItems, cartSessionId } = req.body;
-    let items = bodyItems as { menu_item_id: string; quantity: number }[];
+    let items = bodyItems as { menu_item_id: string; quantity: number; variant_id?: string; addon_ids?: string[] }[];
     if (cartSessionId && (!items || items.length === 0)) {
       items = await getCart(cartSessionId);
     }

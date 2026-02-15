@@ -10,32 +10,68 @@ function isOrderStatus(s: string): s is OrderStatus {
   return ORDER_STATUSES.includes(s as OrderStatus);
 }
 
+type OrderLineInput = {
+  menu_item_id: string;
+  quantity: number;
+  variant_id?: string;
+  addon_ids?: string[];
+};
+
 export async function createOrder(
   restaurantId: string,
   tableId: string,
-  items: { menu_item_id: string; quantity: number }[]
+  items: OrderLineInput[]
 ) {
   if (!items.length) throw Object.assign(new Error("At least one item required"), { statusCode: 400 });
   const menuItemIds = [...new Set(items.map((i) => i.menu_item_id))];
   const menuItems = await prisma.menuItem.findMany({
     where: { id: { in: menuItemIds }, restaurantId, isAvailable: true },
+    include: { variants: true, addons: true },
   });
   if (menuItems.length !== menuItemIds.length) {
     throw Object.assign(new Error("Invalid or unavailable menu items"), { statusCode: 400 });
   }
   const map = new Map(menuItems.map((m) => [m.id, m]));
   let total = 0;
-  const lineItems: { menuItemId: string; name: string; price: number; quantity: number }[] = [];
+  const lineItems: {
+    menuItemId: string;
+    name: string;
+    price: number;
+    quantity: number;
+    variantNameSnapshot?: string;
+    addonSnapshot?: string;
+  }[] = [];
   for (const line of items) {
     const item = map.get(line.menu_item_id);
     if (!item || line.quantity < 1) throw Object.assign(new Error("Invalid item or quantity"), { statusCode: 400 });
-    const priceNum = Number(item.price);
+    let priceNum = Number(item.price);
+    let variantName: string | undefined;
+    let addonNames: string[] = [];
+    if (line.variant_id) {
+      const v = item.variants.find((x) => x.id === line.variant_id);
+      if (!v) throw Object.assign(new Error("Invalid variant"), { statusCode: 400 });
+      priceNum += Number(v.priceModifier);
+      variantName = v.name;
+    }
+    if (line.addon_ids?.length) {
+      for (const aid of line.addon_ids) {
+        const a = item.addons.find((x) => x.id === aid);
+        if (!a) throw Object.assign(new Error("Invalid addon"), { statusCode: 400 });
+        priceNum += Number(a.price);
+        addonNames.push(a.name);
+      }
+    }
     total += priceNum * line.quantity;
+    const displayName = [item.name, variantName, addonNames.length ? `(${addonNames.join(", ")})` : null]
+      .filter(Boolean)
+      .join(" ");
     lineItems.push({
       menuItemId: item.id,
-      name: item.name,
+      name: displayName,
       price: priceNum,
       quantity: line.quantity,
+      variantNameSnapshot: variantName ?? undefined,
+      addonSnapshot: addonNames.length ? addonNames.join(", ") : undefined,
     });
   }
   const order = await prisma.order.create({
@@ -50,6 +86,8 @@ export async function createOrder(
           nameSnapshot: l.name,
           priceSnapshot: l.price,
           quantity: l.quantity,
+          variantNameSnapshot: l.variantNameSnapshot,
+          addonSnapshot: l.addonSnapshot,
         })),
       },
     },
