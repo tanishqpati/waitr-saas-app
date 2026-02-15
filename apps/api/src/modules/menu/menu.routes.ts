@@ -6,6 +6,7 @@ import {
   createCategoryBody,
   createMenuItemBody,
   createVariantBody,
+  menuEditorQuery,
   menuItemIdParams,
   menuSlugParams,
   reorderMenuItemsBody,
@@ -16,6 +17,7 @@ import {
   createCategory,
   createMenuItem,
   getMenuBySlugCached,
+  getMenuForEditor,
   reorderMenuItems,
   updateMenuItem,
 } from "./menu.service";
@@ -36,6 +38,17 @@ menuPublicRouter.get("/:slug/menu", validate(menuSlugParams, "params"), async (r
 
 export const menuProtectedRouter = Router();
 menuProtectedRouter.use(authMiddleware);
+menuProtectedRouter.get("/", validate(menuEditorQuery, "query"), async (req, res, next) => {
+  try {
+    if (!req.user) return next(unauthorized());
+    const { restaurantId } = (req.validatedQuery ?? req.query) as { restaurantId: string };
+    const menu = await getMenuForEditor(req.user, restaurantId);
+    if (!menu) return next(notFound("Restaurant not found"));
+    res.json(menu);
+  } catch (e) {
+    next(e);
+  }
+});
 menuProtectedRouter.post("/categories", validate(createCategoryBody), async (req, res, next) => {
   try {
     if (!req.user) return next(unauthorized());
