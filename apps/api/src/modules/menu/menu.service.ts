@@ -126,6 +126,40 @@ export async function updateMenuItem(
   return updated;
 }
 
+export async function getMenuForEditor(user: AuthUser, restaurantId: string) {
+  const can = await userCanAccessRestaurant(user.id, restaurantId);
+  if (!can) throw Object.assign(new Error("Forbidden"), { statusCode: 403 });
+  const restaurant = await prisma.restaurant.findUnique({
+    where: { id: restaurantId },
+    include: {
+      menuCategories: {
+        orderBy: { sortOrder: "asc" },
+        include: {
+          items: {
+            orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+          },
+        },
+      },
+    },
+  });
+  if (!restaurant) return null;
+  return {
+    categories: restaurant.menuCategories.map((c) => ({
+      id: c.id,
+      name: c.name,
+      sortOrder: c.sortOrder,
+      items: c.items.map((i) => ({
+        id: i.id,
+        name: i.name,
+        price: Number(i.price),
+        isAvailable: i.isAvailable,
+        sortOrder: i.sortOrder,
+        categoryId: i.categoryId,
+      })),
+    })),
+  };
+}
+
 export async function reorderMenuItems(user: AuthUser, restaurantId: string, itemIds: string[]) {
   const can = await userCanAccessRestaurant(user.id, restaurantId);
   if (!can) throw Object.assign(new Error("Forbidden"), { statusCode: 403 });
