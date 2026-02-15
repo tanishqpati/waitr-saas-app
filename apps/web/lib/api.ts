@@ -111,7 +111,23 @@ export const analyticsApi = {
     ),
 };
 
+export type EditorCategory = {
+  id: string;
+  name: string;
+  sortOrder: number;
+  items: {
+    id: string;
+    name: string;
+    price: number;
+    isAvailable: boolean;
+    sortOrder: number;
+    categoryId: string;
+  }[];
+};
+
 export const menuApi = {
+  getForEditor: (restaurantId: string) =>
+    api<{ categories: EditorCategory[] }>(`/menu?restaurant_id=${encodeURIComponent(restaurantId)}`),
   createCategory: (restaurantId: string, name: string, sortOrder?: number) =>
     api<{ id: string }>("/menu/categories", {
       method: "POST",
@@ -126,6 +142,19 @@ export const menuApi = {
         name,
         price,
       }),
+    }),
+  updateItem: (
+    itemId: string,
+    data: { name?: string; price?: number; categoryId?: string; isAvailable?: boolean }
+  ) =>
+    api<{ id: string; name: string; price: number; isAvailable: boolean }>(`/menu/items/${itemId}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    }),
+  reorderItems: (restaurantId: string, itemIds: string[]) =>
+    api<{ ok: boolean }>("/menu/items/reorder", {
+      method: "PATCH",
+      body: JSON.stringify({ restaurant_id: restaurantId, item_ids: itemIds }),
     }),
   getBySlug: (slug: string) =>
     api<{
