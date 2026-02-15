@@ -17,7 +17,8 @@ export async function getMenuBySlug(slug: string) {
         include: {
           items: {
             where: { isAvailable: true },
-            orderBy: { name: "asc" },
+            orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+            include: { variants: true, addons: true },
           },
         },
       },
@@ -37,6 +38,8 @@ export async function getMenuBySlug(slug: string) {
         name: i.name,
         price: Number(i.price),
         isAvailable: i.isAvailable,
+        variants: i.variants.map((v) => ({ id: v.id, name: v.name, priceModifier: Number(v.priceModifier) })),
+        addons: i.addons.map((a) => ({ id: a.id, name: a.name, price: Number(a.price) })),
       })),
     })),
   };
@@ -102,4 +105,35 @@ export async function createMenuItem(
   });
   await invalidateMenuCache(restaurantId);
   return item;
+}
+
+export async function updateMenuItem(
+  user: AuthUser,
+  itemId: string,
+  data: { name?: string; price?: number; categoryId?: string; isAvailable?: boolean }
+) {
+  const item = await prisma.menuItem.findUnique({ where: { id: itemId } });
+  if (!item) throw Object.assign(new Error("Menu item not found"), { statusCode: 404 });
+  const can = await userCanAccessRestaurant(user.id, item.restaurantId);
+  if (!can) throw Object.assign(new Error("Forbidden"), { statusCode: 403 });
+  const update: { name?: string; price?: number; categoryId?: string; isAvailable?: boolean } = {};
+  if (data.name !== undefined) update.name = data.name;
+  if (data.price !== undefined) update.price = data.price;
+  if (data.categoryId !== undefined) update.categoryId = data.categoryId;
+  if (data.isAvailable !== undefined) update.isAvailable = data.isAvailable;
+  const updated = await prisma.menuItem.update({ where: { id: itemId }, data: update });
+  await invalidateMenuCache(item.restaurantId);
+  return updated;
+}
+
+export async function reorderMenuItems(user: AuthUser, restaurantId: string, itemIds: string[]) {
+  const can = await userCanAccessRestaurant(user.id, restaurantId);
+  if (!can) throw Object.assign(new Error("Forbidden"), { statusCode: 403 });
+  await prisma.$transaction(
+    itemIds.map((id, idx) =>
+      prisma.menuItem.update({ where: { id, restaurantId }, data: { sortOrder: idx } })
+    )
+  );
+  await invalidateMenuCache(restaurantId);
+  return { ok: true };
 }
