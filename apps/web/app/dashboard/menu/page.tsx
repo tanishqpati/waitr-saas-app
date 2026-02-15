@@ -26,6 +26,14 @@ export default function DashboardMenuPage() {
   const [editPrice, setEditPrice] = useState("");
   const [editCategoryId, setEditCategoryId] = useState("");
   const [editLoading, setEditLoading] = useState(false);
+  const [variants, setVariants] = useState<{ id: string; name: string; priceModifier: number }[]>([]);
+  const [addons, setAddons] = useState<{ id: string; name: string; price: number }[]>([]);
+  const [variantName, setVariantName] = useState("");
+  const [variantModifier, setVariantModifier] = useState("");
+  const [addonName, setAddonName] = useState("");
+  const [addonPrice, setAddonPrice] = useState("");
+  const [variantsLoading, setVariantsLoading] = useState(false);
+  const [addonsLoading, setAddonsLoading] = useState(false);
 
   function loadMenu() {
     if (!restaurantId) return;
@@ -87,6 +95,19 @@ export default function DashboardMenuPage() {
     setEditName(item.name);
     setEditPrice(String(item.price));
     setEditCategoryId(item.categoryId);
+    setVariantName("");
+    setVariantModifier("");
+    setAddonName("");
+    setAddonPrice("");
+    Promise.all([menuApi.getVariants(item.id), menuApi.getAddons(item.id)])
+      .then(([v, a]) => {
+        setVariants(v);
+        setAddons(a);
+      })
+      .catch(() => {
+        setVariants([]);
+        setAddons([]);
+      });
   }
 
   async function saveEdit(e: React.FormEvent) {
@@ -108,6 +129,44 @@ export default function DashboardMenuPage() {
       setError(e instanceof Error ? e.message : "Failed to update");
     } finally {
       setEditLoading(false);
+    }
+  }
+
+  async function addVariant(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editItem || !variantName.trim()) return;
+    const mod = parseFloat(variantModifier);
+    if (Number.isNaN(mod)) return;
+    setVariantsLoading(true);
+    setError(null);
+    try {
+      const v = await menuApi.createVariant(editItem.id, variantName.trim(), mod);
+      setVariants((prev) => [...prev, v]);
+      setVariantName("");
+      setVariantModifier("");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to add variant");
+    } finally {
+      setVariantsLoading(false);
+    }
+  }
+
+  async function addAddon(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editItem || !addonName.trim()) return;
+    const price = parseFloat(addonPrice);
+    if (Number.isNaN(price) || price < 0) return;
+    setAddonsLoading(true);
+    setError(null);
+    try {
+      const a = await menuApi.createAddon(editItem.id, addonName.trim(), price);
+      setAddons((prev) => [...prev, a]);
+      setAddonName("");
+      setAddonPrice("");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to add addon");
+    } finally {
+      setAddonsLoading(false);
     }
   }
 
@@ -265,7 +324,7 @@ export default function DashboardMenuPage() {
           onClick={() => setEditItem(null)}
         >
           <Card
-            className="w-full max-w-md"
+            className="w-full max-w-lg max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             <CardHeader className="flex flex-row items-center justify-between">
@@ -309,7 +368,73 @@ export default function DashboardMenuPage() {
                     ))}
                   </select>
                 </div>
-                <div className="flex gap-2">
+
+                <div className="border-t border-border pt-4 space-y-3">
+                  <h3 className="text-sm font-medium">Variants</h3>
+                  {variants.length > 0 && (
+                    <ul className="text-sm text-muted-foreground space-y-1">
+                      {variants.map((v) => (
+                        <li key={v.id}>
+                          {v.name} {v.priceModifier >= 0 ? "+" : ""}${v.priceModifier.toFixed(2)}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  <form onSubmit={addVariant} className="flex gap-2">
+                    <Input
+                      value={variantName}
+                      onChange={(e) => setVariantName(e.target.value)}
+                      placeholder="e.g. Large"
+                      className="flex-1"
+                    />
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={variantModifier}
+                      onChange={(e) => setVariantModifier(e.target.value)}
+                      placeholder="+$"
+                      className="w-20"
+                    />
+                    <Button type="submit" size="sm" disabled={variantsLoading || !variantName.trim()}>
+                      Add
+                    </Button>
+                  </form>
+                </div>
+
+                <div className="border-t border-border pt-4 space-y-3">
+                  <h3 className="text-sm font-medium">Add-ons</h3>
+                  {addons.length > 0 && (
+                    <ul className="text-sm text-muted-foreground space-y-1">
+                      {addons.map((a) => (
+                        <li key={a.id}>
+                          {a.name} +${a.price.toFixed(2)}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  <form onSubmit={addAddon} className="flex gap-2">
+                    <Input
+                      value={addonName}
+                      onChange={(e) => setAddonName(e.target.value)}
+                      placeholder="e.g. Extra cheese"
+                      className="flex-1"
+                    />
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={addonPrice}
+                      onChange={(e) => setAddonPrice(e.target.value)}
+                      placeholder="Price"
+                      className="w-20"
+                    />
+                    <Button type="submit" size="sm" disabled={addonsLoading || !addonName.trim() || !addonPrice}>
+                      Add
+                    </Button>
+                  </form>
+                </div>
+
+                <div className="flex gap-2 pt-2">
                   <Button type="submit" disabled={editLoading}>
                     Save
                   </Button>
