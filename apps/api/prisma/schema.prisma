@@ -73,13 +73,40 @@ model MenuItem {
   name         String
   price        Decimal  @db.Decimal(10, 2)
   isAvailable  Boolean  @default(true) @map("is_available")
+  sortOrder    Int      @default(0) @map("sort_order")
 
-  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
-  category   MenuCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  restaurant Restaurant       @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  category   MenuCategory    @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  variants   MenuItemVariant[]
+  addons     MenuItemAddon[]
   orderItems OrderItem[]
 
   @@index([restaurantId])
   @@map("menu_items")
+}
+
+model MenuItemVariant {
+  id             String  @id @default(uuid())
+  menuItemId     String  @map("menu_item_id")
+  name           String
+  priceModifier  Decimal @map("price_modifier") @db.Decimal(10, 2)
+
+  menuItem MenuItem @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+
+  @@index([menuItemId])
+  @@map("menu_item_variants")
+}
+
+model MenuItemAddon {
+  id         String  @id @default(uuid())
+  menuItemId String  @map("menu_item_id")
+  name       String
+  price      Decimal @db.Decimal(10, 2)
+
+  menuItem MenuItem @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+
+  @@index([menuItemId])
+  @@map("menu_item_addons")
 }
 
 model Order {
@@ -101,16 +128,19 @@ model Order {
 }
 
 model OrderItem {
-  id            String  @id @default(uuid())
-  orderId       String  @map("order_id")
-  menuItemId    String  @map("menu_item_id")
-  nameSnapshot  String  @map("name_snapshot")
-  priceSnapshot Decimal @map("price_snapshot") @db.Decimal(10, 2)
-  quantity      Int
+  id                  String  @id @default(uuid())
+  orderId             String  @map("order_id")
+  menuItemId          String  @map("menu_item_id")
+  nameSnapshot        String  @map("name_snapshot")
+  priceSnapshot       Decimal @map("price_snapshot") @db.Decimal(10, 2)
+  quantity            Int
+  variantNameSnapshot String? @map("variant_name_snapshot")
+  addonSnapshot       String? @map("addon_snapshot")
 
   order    Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
   menuItem MenuItem @relation(fields: [menuItemId], references: [id], onDelete: Restrict)
 
+  @@index([menuItemId])
   @@map("order_items")
 }
 
