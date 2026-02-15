@@ -17,7 +17,7 @@ export async function getMenuBySlug(slug: string) {
         include: {
           items: {
             where: { isAvailable: true },
-            orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+            orderBy: { name: "asc" },
             include: { variants: true, addons: true },
           },
         },
@@ -136,7 +136,7 @@ export async function getMenuForEditor(user: AuthUser, restaurantId: string) {
         orderBy: { sortOrder: "asc" },
         include: {
           items: {
-            orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+            orderBy: { name: "asc" },
           },
         },
       },
@@ -153,7 +153,6 @@ export async function getMenuForEditor(user: AuthUser, restaurantId: string) {
         name: i.name,
         price: Number(i.price),
         isAvailable: i.isAvailable,
-        sortOrder: i.sortOrder,
         categoryId: i.categoryId,
       })),
     })),

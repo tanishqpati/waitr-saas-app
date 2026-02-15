@@ -120,14 +120,13 @@ export type EditorCategory = {
     name: string;
     price: number;
     isAvailable: boolean;
-    sortOrder: number;
     categoryId: string;
   }[];
 };
 
 export const menuApi = {
   getForEditor: (restaurantId: string) =>
-    api<{ categories: EditorCategory[] }>(`/menu?restaurant_id=${encodeURIComponent(restaurantId)}`),
+    api<{ categories: EditorCategory[] }>(`/menu/editor?restaurant_id=${encodeURIComponent(restaurantId)}`),
   createCategory: (restaurantId: string, name: string, sortOrder?: number) =>
     api<{ id: string }>("/menu/categories", {
       method: "POST",
