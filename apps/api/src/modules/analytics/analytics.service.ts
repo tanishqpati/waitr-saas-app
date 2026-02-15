@@ -100,7 +100,7 @@ export async function getSalesOverTime(
       ? await prisma.$queryRaw<Row[]>`
           SELECT DATE(o.created_at) AS dt, COALESCE(SUM(o.total_amount), 0)::decimal AS revenue
           FROM orders o
-          WHERE o.restaurant_id = ${restaurantId}::uuid
+          WHERE o.restaurant_id = ${restaurantId}
             AND o.created_at >= ${since}
             AND o.status IN ('NEW', 'PREPARING', 'READY', 'COMPLETED')
           GROUP BY DATE(o.created_at)
@@ -109,7 +109,7 @@ export async function getSalesOverTime(
       : await prisma.$queryRaw<Row[]>`
           SELECT DATE_TRUNC('month', o.created_at)::date AS dt, COALESCE(SUM(o.total_amount), 0)::decimal AS revenue
           FROM orders o
-          WHERE o.restaurant_id = ${restaurantId}::uuid
+          WHERE o.restaurant_id = ${restaurantId}
             AND o.created_at >= ${since}
             AND o.status IN ('NEW', 'PREPARING', 'READY', 'COMPLETED')
           GROUP BY DATE_TRUNC('month', o.created_at)
