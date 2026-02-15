@@ -89,6 +89,28 @@ export const restaurantsApi = {
   getOnboardingProgress: () => api<OnboardingRestaurant[]>("/restaurants/onboarding-progress"),
 };
 
+export type AnalyticsToday = {
+  ordersCount: number;
+  revenue: number;
+  avgOrderValue: number;
+  activeOrders: number;
+};
+
+export type PopularItem = { menuItemId: string; name: string; quantity: number };
+
+export type SalesDataPoint = { date: string; revenue: number };
+
+export const analyticsApi = {
+  today: (restaurantId: string) =>
+    api<AnalyticsToday>(`/analytics/today?restaurant_id=${encodeURIComponent(restaurantId)}`),
+  popularItems: (restaurantId: string) =>
+    api<PopularItem[]>(`/analytics/popular-items?restaurant_id=${encodeURIComponent(restaurantId)}`),
+  sales: (restaurantId: string, range: "7d" | "12m" = "7d") =>
+    api<SalesDataPoint[]>(
+      `/analytics/sales?restaurant_id=${encodeURIComponent(restaurantId)}&range=${range}`
+    ),
+};
+
 export const menuApi = {
   createCategory: (restaurantId: string, name: string, sortOrder?: number) =>
     api<{ id: string }>("/menu/categories", {

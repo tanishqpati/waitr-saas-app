@@ -79,6 +79,8 @@ export const orderQuantitySchema = z.coerce
 export const orderItemSchema = z.object({
   menu_item_id: uuidSchema,
   quantity: orderQuantitySchema,
+  variant_id: uuidSchema.optional(),
+  addon_ids: z.array(uuidSchema).max(10).optional(),
 });
 
 export const orderItemsArraySchema = z
