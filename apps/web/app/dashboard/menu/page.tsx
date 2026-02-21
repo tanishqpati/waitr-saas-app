@@ -380,10 +380,16 @@ export default function DashboardMenuPage() {
                       ))}
                     </ul>
                   )}
-                  <form onSubmit={addVariant} className="flex gap-2">
+                  <div className="flex gap-2">
                     <Input
                       value={variantName}
                       onChange={(e) => setVariantName(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          if (variantName.trim()) addVariant(e as unknown as React.FormEvent);
+                        }
+                      }}
                       placeholder="e.g. Large"
                       className="flex-1"
                     />
@@ -395,10 +401,15 @@ export default function DashboardMenuPage() {
                       placeholder="+$"
                       className="w-20"
                     />
-                    <Button type="submit" size="sm" disabled={variantsLoading || !variantName.trim()}>
+                    <Button
+                      type="button"
+                      size="sm"
+                      disabled={variantsLoading || !variantName.trim()}
+                      onClick={() => addVariant({ preventDefault: () => {} } as React.FormEvent)}
+                    >
                       Add
                     </Button>
-                  </form>
+                  </div>
                 </div>
 
                 <div className="border-t border-border pt-4 space-y-3">
@@ -412,10 +423,16 @@ export default function DashboardMenuPage() {
                       ))}
                     </ul>
                   )}
-                  <form onSubmit={addAddon} className="flex gap-2">
+                  <div className="flex gap-2">
                     <Input
                       value={addonName}
                       onChange={(e) => setAddonName(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          if (addonName.trim() && addonPrice) addAddon({ preventDefault: () => {} } as React.FormEvent);
+                        }
+                      }}
                       placeholder="e.g. Extra cheese"
                       className="flex-1"
                     />
@@ -428,10 +445,15 @@ export default function DashboardMenuPage() {
                       placeholder="Price"
                       className="w-20"
                     />
-                    <Button type="submit" size="sm" disabled={addonsLoading || !addonName.trim() || !addonPrice}>
+                    <Button
+                      type="button"
+                      size="sm"
+                      disabled={addonsLoading || !addonName.trim() || !addonPrice}
+                      onClick={() => addAddon({ preventDefault: () => {} } as React.FormEvent)}
+                    >
                       Add
                     </Button>
-                  </form>
+                  </div>
                 </div>
 
                 <div className="flex gap-2 pt-2">
