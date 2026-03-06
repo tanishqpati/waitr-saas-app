@@ -1,5 +1,6 @@
 import crypto from "crypto";
 import { getUpstashRedis, CART_PREFIX, CART_TTL_SEC } from "../../lib/upstash";
+import { logger } from "../../lib/logger";
 
 export type CartItem = { menu_item_id: string; quantity: number };
 
@@ -24,16 +25,17 @@ export async function getCart(sessionId: string): Promise<CartItem[]> {
   const redis = getUpstashRedis();
   if (!redis) return [];
   const key = `${CART_PREFIX}${sessionId}`;
-  const raw = await redis.get(key);
-  if (typeof raw !== "string") return [];
   try {
+    const raw = await redis.get(key);
+    if (typeof raw !== "string") return [];
     const arr = JSON.parse(raw) as unknown;
     if (!Array.isArray(arr)) return [];
     return arr.filter(
       (x): x is CartItem =>
         x != null && typeof x === "object" && typeof (x as CartItem).menu_item_id === "string" && typeof (x as CartItem).quantity === "number"
     );
-  } catch {
+  } catch (err) {
+    logger.info("Cart backend unreachable, returning empty", { error: err instanceof Error ? err.message : String(err) });
     return [];
   }
 }
@@ -42,9 +44,13 @@ export async function setCart(sessionId: string, items: CartItem[]): Promise<voi
   const redis = getUpstashRedis();
   if (!redis) return;
   const key = `${CART_PREFIX}${sessionId}`;
-  if (items.length === 0) {
-    await redis.del(key);
-    return;
+  try {
+    if (items.length === 0) {
+      await redis.del(key);
+      return;
+    }
+    await redis.setex(key, CART_TTL_SEC, JSON.stringify(items));
+  } catch (err) {
+    logger.info("Cart backend unreachable, skipping persist", { error: err instanceof Error ? err.message : String(err) });
   }
-  await redis.setex(key, CART_TTL_SEC, JSON.stringify(items));
 }
