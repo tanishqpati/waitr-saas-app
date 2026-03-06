@@ -4,6 +4,7 @@ import {
   MENU_CACHE_PREFIX,
   MENU_CACHE_TTL_SEC,
 } from "../../lib/upstash";
+import { logger } from "../../lib/logger";
 import type { AuthUser } from "../../middleware/auth";
 
 export type MenuBySlugResult = Awaited<ReturnType<typeof getMenuBySlug>>;
@@ -50,11 +51,21 @@ export async function getMenuBySlugCached(slug: string): Promise<MenuBySlugResul
   const redis = getUpstashRedis();
   const key = `${MENU_CACHE_PREFIX}${slug.toLowerCase()}`;
   if (redis) {
-    const cached = await redis.get(key);
-    if (typeof cached === "string") return JSON.parse(cached) as MenuBySlugResult;
+    try {
+      const cached = await redis.get(key);
+      if (typeof cached === "string") return JSON.parse(cached) as MenuBySlugResult;
+    } catch (err) {
+      logger.info("Menu cache backend unreachable, falling through to DB", { error: err instanceof Error ? err.message : String(err) });
+    }
   }
   const menu = await getMenuBySlug(slug);
-  if (menu && redis) await redis.setex(key, MENU_CACHE_TTL_SEC, JSON.stringify(menu));
+  if (menu && redis) {
+    try {
+      await redis.setex(key, MENU_CACHE_TTL_SEC, JSON.stringify(menu));
+    } catch (err) {
+      logger.info("Menu cache backend unreachable, skipping cache write", { error: err instanceof Error ? err.message : String(err) });
+    }
+  }
   return menu;
 }
 
@@ -63,7 +74,13 @@ export async function invalidateMenuCache(restaurantId: string): Promise<void> {
   const redis = getUpstashRedis();
   if (!redis) return;
   const r = await prisma.restaurant.findUnique({ where: { id: restaurantId }, select: { slug: true } });
-  if (r) await redis.del(`${MENU_CACHE_PREFIX}${r.slug}`);
+  if (r) {
+    try {
+      await redis.del(`${MENU_CACHE_PREFIX}${r.slug}`);
+    } catch (err) {
+      logger.info("Menu cache backend unreachable, skipping invalidation", { error: err instanceof Error ? err.message : String(err) });
+    }
+  }
 }
 
 async function userCanAccessRestaurant(userId: string, restaurantId: string): Promise<boolean> {
