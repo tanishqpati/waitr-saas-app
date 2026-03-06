@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { getRateLimiter } from "../lib/upstash";
+import { logger } from "../lib/logger";
 
 /** Identifier for rate limiting: authenticated user id, or IP. */
 function getIdentifier(req: Request): string {
@@ -11,6 +12,7 @@ function getIdentifier(req: Request): string {
 /**
  * Rate limit by user id (if authenticated) or IP.
  * When Upstash is not configured, passes through.
+ * When Upstash is unreachable (wrong URL, network), logs and passes through.
  */
 export async function rateLimitMiddleware(req: Request, res: Response, next: NextFunction): Promise<void> {
   const limiter = getRateLimiter();
@@ -19,11 +21,16 @@ export async function rateLimitMiddleware(req: Request, res: Response, next: Nex
     return;
   }
   const id = getIdentifier(req);
-  const { success, pending } = await limiter.limit(id);
-  await pending;
-  if (!success) {
-    res.status(429).json({ error: "Too many requests" });
-    return;
+  try {
+    const { success, pending } = await limiter.limit(id);
+    await pending;
+    if (!success) {
+      res.status(429).json({ error: "Too many requests" });
+      return;
+    }
+    next();
+  } catch (e) {
+    logger.info("Rate limit backend unreachable, passing through", { error: e instanceof Error ? e.message : String(e) });
+    next();
   }
-  next();
 }
